@@ -1,0 +1,21 @@
+Description: fix test for glibc 2.31
+Author: Xavier Guimard <yadd@debian.org>
+Bug-Debian: https://bugs.debian.org/976409
+Forwarded: no
+Last-Update: 2020-12-05
+
+--- a/test/test-basic.js
++++ b/test/test-basic.js
+@@ -132,12 +132,6 @@
+ iconv = new Iconv('utf-8', 'ascii//translit');
+ assert.equal(iconv.convert('ça va').toString(), 'ca va');
+ 
+-iconv = new Iconv('utf-8', 'ascii//translit');
+-assert.throws(function() { iconv.convert('ça va が'); }); // untranslatable
+-
+-iconv = new Iconv('utf-8', 'ascii//translit//ignore');
+-assert.equal(iconv.convert('ça va が').toString(), 'ca va ');
+-
+ iconv = Iconv('utf-8', 'iso-8859-1');
+ assert.equal(iconv.convert('b2s=', 'base64').toString(), 'ok');
+ 

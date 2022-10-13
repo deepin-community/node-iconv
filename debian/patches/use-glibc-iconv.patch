@@ -1,0 +1,113 @@
+Description: use system iconv from glibc
+ 1) do not build bundled iconv
+ 2) work around eglibc libiconv implementation, that is:
+  * do not throw when //translit is on
+  * set LC_CTYPE to "C.UTF-8" to get previsible //translit behavior.
+    This is a feature a debian's libc6 implementation.
+  * codepages CP858 CP853 CP943 are not available
+Forwarded: not-needed
+Author: Jérémy Lal <kapouer@melix.org>
+Last-Update: 2019-10-21
+
+--- a/src/binding.cc
++++ b/src/binding.cc
+@@ -14,13 +14,14 @@
+  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+  */
+ 
+-#include "iconv.h"
+-#include "nan.h"
+-#include "node_buffer.h"
++#include <iconv.h>
++#include <nan.h>
++#include <node_buffer.h>
+ 
+ #include <errno.h>
+ #include <assert.h>
+ #include <stdint.h>
++#include <locale.h>
+ 
+ #ifndef ICONV_CONST
+ #define ICONV_CONST
+@@ -59,6 +60,7 @@
+ 
+   static void Initialize(Local<Object> obj)
+   {
++		setlocale(LC_CTYPE, "C.UTF-8");
+     Local<ObjectTemplate> t = Nan::New<ObjectTemplate>();
+     t->SetInternalFieldCount(1);
+     object_template.Reset(t);
+--- a/lib/iconv.js
++++ b/lib/iconv.js
+@@ -47,21 +47,24 @@
+   stream.Stream.call(this);
+   this.writable = true;
+ 
+-  var conv = bindings.make(fixEncoding(fromEncoding),
+-                           fixEncoding(toEncoding));
++  var fixedFrom = fixEncoding(fromEncoding);
++  var fixedTo = fixEncoding(toEncoding);
++
++  var conv = bindings.make(fixedFrom, fixedTo);
+   if (conv === null) {
+     throw new Error('Conversion from ' +
+                     fromEncoding + ' to ' +
+                     toEncoding + ' is not supported.');
+   }
+ 
+-  var context_ = { trailer: null };
++  var context_ = { trailer: null, from: fixedFrom, to: fixedTo };
+ 
+   this.convert = function(input, encoding) {
+     if (typeof(input) === 'string') {
+       input = Buffer.from(input, encoding || 'utf8');
+     }
+-    return convert(conv, input, null);
++    context_.none = true;
++    return convert(conv, input, context_);
+   };
+ 
+   this.write = function(input, encoding) {
+@@ -102,10 +105,10 @@
+   if (!Buffer.isBuffer(input) && input !== FLUSH) {
+     throw new Error('Bad argument.');  // Not a buffer or a string.
+   }
+-  if (context !== null && context.trailer !== null && input === FLUSH) {
++  if (context.trailer !== null && input === FLUSH) {
+     throw errnoException('EINVAL', 'Incomplete character sequence.');
+   }
+-  if (context !== null && context.trailer !== null) {
++  if (context.trailer !== null) {
+     if (input.length === 0) {
+       // Use the trailer directly when the input is empty,
+       // don't allocate a new buffer.
+@@ -151,10 +154,12 @@
+         continue;
+       }
+       else if (errno === EILSEQ) {
+-        throw errnoException('EILSEQ', 'Illegal character sequence.');
++        if (/\/\/ignore/i.test(context.to) == false) {
++          throw errnoException('EILSEQ', 'Illegal character sequence.');
++        }
+       }
+       else if (errno === EINVAL) {
+-        if (context === null || input === FLUSH) {
++        if (context.none || input === FLUSH) {
+           throw errnoException('EINVAL', 'Incomplete character sequence.');
+         }
+         else {
+--- a/test/test-basic.js
++++ b/test/test-basic.js
+@@ -143,10 +143,10 @@
+ assert.equal(iconv.convert('b2s=', 'base64').toString(), 'ok');
+ 
+ var aixEncodings =
+-    'CP856 CP922 CP943 CP1046 CP1124 CP1129 CP1161 CP1162 CP1163';
++    'CP856 CP922 CP1046 CP1124 CP1129 CP1161 CP1162 CP1163';
+ 
+ var dosEncodings =
+-    'CP437 CP737 CP775 CP852 CP853 CP855 CP857 CP858 CP860 CP861 ' +
++    'CP437 CP737 CP775 CP852 CP855 CP857 CP860 CP861 ' +
+     'CP863 CP864 CP865 CP869 CP1125';
+ 
+ // Check that AIX and DOS encodings are available.

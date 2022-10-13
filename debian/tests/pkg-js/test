@@ -1,0 +1,2 @@
+mkdir -p test/tmp
+node test/run-tests.js
