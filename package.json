@@ -1,7 +1,6 @@
 {
   "name": "iconv",
-  "main": "./lib/iconv",
-  "version": "2.3.5",
+  "version": "3.0.1",
   "description": "Text recoding in JavaScript for fun and profit!",
   "homepage": "https://github.com/bnoordhuis/node-iconv",
   "repository": {
@@ -13,14 +12,10 @@
     "email": "info@bnoordhuis.nl"
   },
   "engines": {
-    "node": ">=0.8.0"
+    "node": ">=10.0.0"
   },
   "license": "ISC",
   "readmeFilename": "README.md",
-  "dependencies": {
-    "nan": "^2.14.0",
-    "safer-buffer": "^2.1.2"
-  },
   "scripts": {
     "test": "node test/run-tests.js"
   }

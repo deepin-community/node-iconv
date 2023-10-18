@@ -1,4 +1,3 @@
 use-glibc-iconv.patch
 path-to-binary-iconv.patch
-no-safer-buffer.patch
 fix-test-for-glib-2.31.patch

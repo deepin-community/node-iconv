@@ -7,56 +7,56 @@ Description: use system iconv from glibc
   * codepages CP858 CP853 CP943 are not available
 Forwarded: not-needed
 Author: Jérémy Lal <kapouer@melix.org>
-Last-Update: 2019-10-21
+Reviewed-By: Yadd <yadd@debian.org>
+Last-Update: 2021-11-29
 
---- a/src/binding.cc
-+++ b/src/binding.cc
+--- a/binding.c
++++ b/binding.c
 @@ -14,13 +14,14 @@
   * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   */
  
 -#include "iconv.h"
--#include "nan.h"
--#include "node_buffer.h"
+-#include "node_api.h"
 +#include <iconv.h>
-+#include <nan.h>
-+#include <node_buffer.h>
++#include <node_api.h>
  
- #include <errno.h>
  #include <assert.h>
+ #include <errno.h>
  #include <stdint.h>
+ #include <stdlib.h>
 +#include <locale.h>
  
- #ifndef ICONV_CONST
- #define ICONV_CONST
-@@ -59,6 +60,7 @@
+ #ifndef E2BIG
+ #define E2BIG 0
+@@ -222,6 +223,7 @@
+ 	EXPORT_VALUE(&props[2], E2BIG);
+ 	EXPORT_VALUE(&props[3], EILSEQ);
+ 	EXPORT_VALUE(&props[4], EINVAL);
++	setlocale(LC_CTYPE, "C.UTF-8");
+ 	napi_define_properties(env, exports, ARRAY_SIZE(props), props);
  
-   static void Initialize(Local<Object> obj)
-   {
-+		setlocale(LC_CTYPE, "C.UTF-8");
-     Local<ObjectTemplate> t = Nan::New<ObjectTemplate>();
-     t->SetInternalFieldCount(1);
-     object_template.Reset(t);
---- a/lib/iconv.js
-+++ b/lib/iconv.js
-@@ -47,21 +47,24 @@
+ 	return exports;
+--- a/index.js
++++ b/index.js
+@@ -46,21 +46,24 @@
    stream.Stream.call(this);
    this.writable = true;
  
--  var conv = bindings.make(fixEncoding(fromEncoding),
--                           fixEncoding(toEncoding));
-+  var fixedFrom = fixEncoding(fromEncoding);
-+  var fixedTo = fixEncoding(toEncoding);
+-  const conv = bindings.make(fixEncoding(fromEncoding),
+-                             fixEncoding(toEncoding));
++  const fixedFrom = fixEncoding(fromEncoding);
++  const fixedTo = fixEncoding(toEncoding);
 +
-+  var conv = bindings.make(fixedFrom, fixedTo);
++  const conv = bindings.make(fixedFrom, fixedTo);
    if (conv === null) {
      throw new Error('Conversion from ' +
                      fromEncoding + ' to ' +
                      toEncoding + ' is not supported.');
    }
  
--  var context_ = { trailer: null };
-+  var context_ = { trailer: null, from: fixedFrom, to: fixedTo };
+-  const context_ = { trailer: null };
++  const context_ = { trailer: null, from: fixedFrom, to: fixedTo };
  
    this.convert = function(input, encoding) {
      if (typeof(input) === 'string') {
@@ -98,14 +98,14 @@ Last-Update: 2019-10-21
          else {
 --- a/test/test-basic.js
 +++ b/test/test-basic.js
-@@ -143,10 +143,10 @@
+@@ -142,10 +142,10 @@
  assert.equal(iconv.convert('b2s=', 'base64').toString(), 'ok');
  
- var aixEncodings =
+ const aixEncodings =
 -    'CP856 CP922 CP943 CP1046 CP1124 CP1129 CP1161 CP1162 CP1163';
 +    'CP856 CP922 CP1046 CP1124 CP1129 CP1161 CP1162 CP1163';
  
- var dosEncodings =
+ const dosEncodings =
 -    'CP437 CP737 CP775 CP852 CP853 CP855 CP857 CP858 CP860 CP861 ' +
 +    'CP437 CP737 CP775 CP852 CP855 CP857 CP860 CP861 ' +
      'CP863 CP864 CP865 CP869 CP1125';

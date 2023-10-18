@@ -6,20 +6,11 @@
   'targets': [
     {
       'target_name': 'iconv',
-      'include_dirs': ['<!(node -e "require(\'nan\')")'],
-      'sources': ['src/binding.cc'],
-      'ccflags': [
-        '-Wall',
-        '-Wextra',
-        '-Wno-unused-parameter',  # Squelches warnings coming from v8.h.
-        '-fno-exceptions',
-        '-fno-rtti',
-      ],
+      'sources': ['binding.c'],
+      'ccflags': ['-Wall', '-Wextra'],
       # Have to repeat flags on mac because of gyp's xcode emulation "feature".
       'xcode_settings': {
-        'GCC_ENABLE_CPP_EXCEPTIONS': 'NO',
-        'GCC_ENABLE_CPP_RTTI': 'NO',
-        'WARNING_CFLAGS': ['-Wall', '-Wextra', '-Wno-unused-parameter'],
+        'WARNING_CFLAGS': ['-Wall', '-Wextra'],
       },
       'conditions': [
         ['node_iconv_use_system_libiconv==0', {
@@ -37,6 +28,7 @@
                 '4090',  # Const/non-const mismatch.
                 '4244',  # Narrowing cast.
                 '4267',  # Narrowing cast.
+                '4311',  # https://github.com/bnoordhuis/node-iconv/issues/174
               ],
             },
           },

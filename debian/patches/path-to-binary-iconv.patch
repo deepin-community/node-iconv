@@ -1,19 +1,22 @@
 Description: iconv.js need to call iconv.node where it is installed
 Forwarded: not-needed
 Author: Matthew Pideil <matthewp_debian@teledetection.fr>
---- a/lib/iconv.js
-+++ b/lib/iconv.js
-@@ -24,11 +24,11 @@
+Reviewed-By: Yadd <yadd@debian.org>
+Last-Update: 2021-11-29
+
+--- a/index.js
++++ b/index.js
+@@ -23,11 +23,11 @@
  
- var bindings;
+ let bindings;
  try {
--  bindings = require('../build/Release/iconv.node');
+-  bindings = require('./build/Release/iconv.node');
 +  bindings = require('./iconv.node');
  }
  catch (e) {
    if (e.code !== 'MODULE_NOT_FOUND') throw e;
--  bindings = require('../build/Debug/iconv.node');
-+  bindings = require('../build/Release/iconv.node');
+-  bindings = require('./build/Debug/iconv.node');
++  bindings = require('./build/Release/iconv.node');
  }
  
- var E2BIG = bindings.E2BIG | 0;
+ const E2BIG = bindings.E2BIG | 0;

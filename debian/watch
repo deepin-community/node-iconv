@@ -1,3 +1,8 @@
 version=4
-opts=filenamemangle=s/.*\/v?([\d\.-]+)\.tar\.gz/node-iconv-$1.tar.gz/ \
- https://github.com/bnoordhuis/node-iconv/tags .*/archive/v?([\d\.]+).tar.gz
+opts=filenamemangle=s/.*?(\d[\d\.-]*@ARCHIVE_EXT@)/node-iconv-$1/ \
+ https://github.com/bnoordhuis/node-iconv/tags .*/archive/.*/v?([\d\.]+).tar.gz group
+
+# It is not recommended use npmregistry. Please investigate more.
+# Take a look at https://wiki.debian.org/debian/watch/
+opts="searchmode=plain,component=types-iconv,ctype=nodejs,pgpmode=none,filenamemangle=s/^.*?(\d[\d\.-]*@ARCHIVE_EXT@)/node-types-iconv-$1/" \
+ https://registry.npmjs.org/@types/iconv https://registry.npmjs.org/@types/iconv/-/iconv-([\d\.]+)@ARCHIVE_EXT@ group
